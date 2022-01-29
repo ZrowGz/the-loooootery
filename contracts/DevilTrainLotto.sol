@@ -2,34 +2,34 @@
 pragma solidity 0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
-//import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
-
-/**
- * @notice A Chainlink VRF consumer which uses randomness to mimic the rolling
- * of a 20 sided die
- * @dev This is only an example implementation and not necessarily suitable for mainnet.
- */
+import "@chainlink/contracts/src/v0.8/ConfirmedOwner.sol";
 
 /**
  * Request testnet LINK and ETH here: https://faucets.chain.link/
  * Find information on LINK Token Contracts and get the latest ETH and LINK faucets here: https://docs.chain.link/docs/link-token-contracts/
  */
  
-contract DevilTrainLottery is VRFConsumerBase { // removed , ConfirmedOwner(msg.sender)
+contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) { 
 
+    // Initialize Chainlink variables
     bytes32 private s_keyHash;
     uint256 private s_fee;
 
-    event TrainLeaving(bytes32 indexed requestId, address payable[] indexed riders);
-    event MeetDestiny(bytes32 indexed requestId, uint256 indexed result);
-    event StillBoarding(address indexed rider, string indexed message);
+    // Define events
+    event NewRider(address indexed rider, string indexed message);
+    event TrainFull(address payable[] indexed riders, uint256 indexed value, bytes32 indexed requestId);
+    event ResultArrived(address indexed riders);
 
-    // our variables
-    address payable owner = payable(owner);
+    // Initialize contract variables
+    address payable house;
     uint public ticketPrice;
     uint8 public maxRiders;
+    bool public acceptingRiders;
     address payable[] public riders;
-    bool acceptingRiders;
+
+    // Historic Records
+    uint16 public tripsTaken;
+    uint public ticketSales;
 
 
     /**
@@ -46,44 +46,38 @@ contract DevilTrainLottery is VRFConsumerBase { // removed , ConfirmedOwner(msg.
      * @param keyHash bytes32 representing the hash of the VRF job
      * @param fee uint256 fee to pay the VRF oracle
      */
-    constructor(address vrfCoordinator, address link, bytes32 keyHash, uint256 fee, uint8 _maxRiders, uint _ticketPrice)
+    constructor(address vrfCoordinator, address link, bytes32 keyHash, uint256 fee, uint8 _maxRiders, uint _ticketPrice, address payable _house)
         VRFConsumerBase(vrfCoordinator, link)
     {
         s_keyHash = keyHash;
         s_fee = fee;
 
-        address owner = msg.sender;
+        house = _house;
         maxRiders = _maxRiders;
         acceptingRiders = true;
-        ticketPrice = _ticketPrice; // 0.2 (200000000000000000)
-    }
-
-
-    modifier onlyOwner {
-        require(msg.sender == owner);
-        _;
+        ticketPrice = _ticketPrice; // for example: 0.2 (200000000000000000)
     }
 
 
     // User buys ticket
     function buyTicket() public payable {
         require(msg.value == ticketPrice, "Incorrect ticket price." );
-        require(acceptingRiders == true, "Only 5 riders per trip!");
-
-        // Pay house for fuel & track maintenance
-        payable(owner).transfer(msg.value / 20);
+        require(acceptingRiders == true, "Wait for next round");
 
         // add passenger to riders
         riders.push(payable(msg.sender));
 
+        ticketSales += msg.value;
 
         // request random number if train is full
         if(riders.length == maxRiders) {
-            acceptingRiders = false;            
+            riders.push(payable(house));
+            acceptingRiders = false;     
+            tripsTaken += 1;       
             //emit TrainLeaving(payable(msg.sender), "Train full! Let's take that ride!");
             getRandomNumber();
         } else{
-            emit StillBoarding(msg.sender, "New Passenger! Awaiting moar riders...");
+            emit NewRider(msg.sender, "New Passenger!");
         }
     }
 
@@ -92,16 +86,15 @@ contract DevilTrainLottery is VRFConsumerBase { // removed , ConfirmedOwner(msg.
      * @dev Warning: if the VRF response is delayed, avoid calling requestRandomness repeatedly
      * as that would give miners/VRF operators latitude about which VRF response arrives first.
      * @dev You must review your implementation details with extreme care.
-     *
-     *
      */
     function getRandomNumber() public returns (bytes32 requestId) { // removed onlyOwner
         require(LINK.balanceOf(address(this)) >= s_fee, "Not enough LINK to pay fee");
-        require(acceptingRiders == false, "Train already left fren, catch the next choo choo!");
+        require(acceptingRiders == false, "Awaiting current results!");
 
         requestId = requestRandomness(s_keyHash, s_fee);
-        emit TrainLeaving(requestId, riders);
+        emit TrainFull(riders, address(this).balance, requestId);
     }
+
 
     /**
      * @notice Callback function used by VRF Coordinator to return the random number
@@ -122,11 +115,11 @@ contract DevilTrainLottery is VRFConsumerBase { // removed , ConfirmedOwner(msg.
 
         // Pay winner
         riders[index].transfer(address(this).balance);
+        emit ResultArrived(riders[index]);
 
         // Reset the state of the contract
         riders = new address payable[](0);
         acceptingRiders = true;
-        emit MeetDestiny(requestId, index);
     }
 
 
@@ -175,20 +168,88 @@ contract DevilTrainLottery is VRFConsumerBase { // removed , ConfirmedOwner(msg.
         ticketPrice = _ticketPrice;
     }
 
+    function getRiderCount() public view returns (uint) {
+        return riders.length;
+    }
+
+    function getRiders() public view returns (address payable[] memory) {
+        return riders;
+    }
 
     function getBalance() public view returns (uint) {
         return address(this).balance;
+    }
+
+    function getHouse() public view returns (address payable) {
+        return house;
+    }
+
+    function setHouse(address payable _newHouse) public onlyOwner {
+        house = _newHouse;
     }
 
     receive() external payable {}
 
     fallback() external payable {}
 
-    function withdrawLINK(address to, uint256 value) public onlyOwner {
-        require(LINK.transfer(to, value), "Not enough LINK");
+    function withdrawLINK(address _to, uint256 _value) public onlyOwner {
+        require(LINK.transfer(_to, _value), "Not enough LINK");
     }
 
     function withdrawAllMoney() public onlyOwner {
-        payable(owner).transfer(address(this).balance);
+        payable(house).transfer(address(this).balance);
+    }
+
+
+    // Pause Contract
+    function setAcceptingRiders(bool _acceptingRiders) public onlyOwner {
+        acceptingRiders = _acceptingRiders;
+    }
+
+    /*
+    * @notice 
+    * Emergency return funds to users and reset state. 
+    * If this fails, use emergencyReboot.
+    */
+    function emergencyRefund() public payable {
+        
+        // Remove house from riders
+        delete riders[riders.length-1];
+
+        // Set temporary variables
+        uint balance = address(this).balance;
+        uint userValue = balance / riders.length;
+
+        // Send funds to all users
+        for (uint8 i = 0; i < riders.length; i++) {
+        riders[i].transfer(userValue);
+        }
+
+        // Decrement the counters for failed tripsTaken
+        tripsTaken -= 1;
+        ticketSales -= ticketPrice * riders.length;
+
+        // Reset the state of the contract
+        riders = new address payable[](0);
+        acceptingRiders = true;
+    }
+
+    /*
+    * @notice
+    * Emergency State Wipe! Used when fulfillRandomness fails to reset
+    * or for when insufficient gas causes a halting error.
+    */
+    function emergencyReboot() public payable onlyOwner {
+
+        // Zero contract balance to prevent build up
+        payable(house).transfer(address(this).balance);
+
+        // Decrement the counters for failed tripsTaken
+        tripsTaken -= 1;
+        ticketSales -= ticketPrice * riders.length;
+
+        // Reset the state of the contract
+        riders = new address payable[](0);
+        acceptingRiders = true;
     }
 }
