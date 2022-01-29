@@ -27,8 +27,9 @@ emergencyReboot: if contract locks up due to an out of gas error at one of the E
 
 ## Addresses & Links
 
-### This Contract
-Rinkeby Contract Address: 0x1734b93e6916B363D3A74CeCC06086A3F8F6C800
+### On Rinkeby Testnet
+Contract Address: 0x1734b93e6916B363D3A74CeCC06086A3F8F6C800
+House Multisig (gnosis safe): 0x1DfF53Bbb4D478161dF0b0D51B8Bc942108bE055
 
 ### Chainlink Data
 VRF Addresses: https://docs.chain.link/docs/vrf-contracts/
