@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// version 0.2
 pragma solidity 0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
@@ -16,9 +17,10 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
     uint256 private s_fee;
 
     // Define events
-    event NewRider(address indexed rider, string indexed message);
-    event TrainFull(address payable[] indexed riders, uint256 indexed value, bytes32 indexed requestId);
-    event ResultArrived(address indexed riders);
+    event NewRider(address indexed rider);
+    event AwaitingRiders(uint indexed current, uint8 indexed maxriders);
+    event TrainFull(address payable[] indexed riders, bytes32 indexed requestId);
+    event ResultArrived(uint16 indexed round, address payable indexed winner); //added payable changed riders to winner, added round
 
     // Initialize contract variables
     address payable house;
@@ -30,6 +32,7 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
     // Historic Records
     uint16 public tripsTaken;
     uint public ticketSales;
+    address payable lastWinner; 
 
 
     /**
@@ -54,30 +57,30 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
 
         house = _house;
         maxRiders = _maxRiders;
-        acceptingRiders = true;
         ticketPrice = _ticketPrice; // for example: 0.2 (200000000000000000)
+        acceptingRiders = true;
     }
 
 
     // User buys ticket
     function buyTicket() public payable {
-        require(msg.value == ticketPrice, "Incorrect ticket price." );
+        require(msg.value == ticketPrice, "Incorrect ticket price" );
         require(acceptingRiders == true, "Wait for next round");
 
-        // add passenger to riders
+        // Add rider, log ticket sale
         riders.push(payable(msg.sender));
-
         ticketSales += msg.value;
 
-        // request random number if train is full
+        emit NewRider(msg.sender);
+
+        // If full, add house, block new riders, log trip, get randomness
         if(riders.length == maxRiders) {
             riders.push(payable(house));
             acceptingRiders = false;     
             tripsTaken += 1;       
-            //emit TrainLeaving(payable(msg.sender), "Train full! Let's take that ride!");
             getRandomNumber();
         } else{
-            emit NewRider(msg.sender, "New Passenger!");
+            emit AwaitingRiders(riders.length, maxRiders);
         }
     }
 
@@ -87,12 +90,12 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
      * as that would give miners/VRF operators latitude about which VRF response arrives first.
      * @dev You must review your implementation details with extreme care.
      */
-    function getRandomNumber() public returns (bytes32 requestId) { // removed onlyOwner
-        require(LINK.balanceOf(address(this)) >= s_fee, "Not enough LINK to pay fee");
-        require(acceptingRiders == false, "Awaiting current results!");
+    function getRandomNumber() internal returns (bytes32 requestId) { // removed onlyOwner
+        require(LINK.balanceOf(address(this)) >= s_fee, "Out of LINK");
+        require(acceptingRiders == false, "Awaiting current winner");
 
         requestId = requestRandomness(s_keyHash, s_fee);
-        emit TrainFull(riders, address(this).balance, requestId);
+        emit TrainFull(riders, requestId);
     }
 
 
@@ -110,15 +113,19 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
      * @param randomness The random result returned by the oracle
      */
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
-        // Assign winner and payout funds
+        // Assign winner
         uint index = randomness % riders.length;
+        lastWinner = riders[index];
+
+        // Reset contract
+        riders = new address payable[](0);
 
         // Pay winner
-        riders[index].transfer(address(this).balance);
-        emit ResultArrived(riders[index]);
+        (bool success, ) = lastWinner.call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
+        emit ResultArrived(tripsTaken, lastWinner);
 
-        // Reset the state of the contract
-        riders = new address payable[](0);
+        // Allow riders
         acceptingRiders = true;
     }
 
@@ -161,6 +168,7 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
 
     // Set & check the maxRiders
     function setMaxRiders(uint8 _maxRiders) public onlyOwner {
+        require(_maxRiders <= 25, "Max must be <= 25");
         maxRiders = _maxRiders;
     }
 
@@ -188,6 +196,10 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
         house = _newHouse;
     }
 
+    function getWinner() public view returns (address payable) {
+        return lastWinner;
+    }
+
     receive() external payable {}
 
     fallback() external payable {}
@@ -196,8 +208,9 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
         require(LINK.transfer(_to, _value), "Not enough LINK");
     }
 
-    function withdrawAllMoney() public onlyOwner {
-        payable(house).transfer(address(this).balance);
+    function withdrawAllMoney() public payable onlyOwner {
+        (bool success, ) = house.call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
     }
 
 
@@ -211,10 +224,14 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
     * Emergency return funds to users and reset state. 
     * If this fails, use emergencyReboot.
     */
-    function emergencyRefund() public payable {
-        
-        // Remove house from riders
-        delete riders[riders.length-1];
+    function emergencyRefund() public payable onlyOwner { //added payable to these three sends
+
+        // Remove house
+        riders.pop;
+
+        // Decrement the counters for failed tripsTaken
+        tripsTaken -= 1;
+        ticketSales -= ticketPrice * riders.length;
 
         // Set temporary variables
         uint balance = address(this).balance;
@@ -222,12 +239,9 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
 
         // Send funds to all users
         for (uint8 i = 0; i < riders.length; i++) {
-        riders[i].transfer(userValue);
+        (bool success, ) = riders[i].call{value: userValue}("");
+        require(success, "Transfer Failed.");
         }
-
-        // Decrement the counters for failed tripsTaken
-        tripsTaken -= 1;
-        ticketSales -= ticketPrice * riders.length;
 
         // Reset the state of the contract
         riders = new address payable[](0);
@@ -242,13 +256,14 @@ contract DevilTrainLottery is VRFConsumerBase, ConfirmedOwner(msg.sender) {
     function emergencyReboot() public payable onlyOwner {
 
         // Zero contract balance to prevent build up
-        payable(house).transfer(address(this).balance);
+        (bool success, ) = house.call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
 
         // Decrement the counters for failed tripsTaken
         tripsTaken -= 1;
         ticketSales -= ticketPrice * riders.length;
 
-        // Reset the state of the contract
+        // Reset the state of the contract 
         riders = new address payable[](0);
         acceptingRiders = true;
     }
