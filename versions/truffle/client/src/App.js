@@ -4,7 +4,7 @@ import { Component } from "react/cjs/react.production.min";
 App  {
 
   web3Provider: null,
-  contracts: {},
+  contracts: {}
 
  // init: async function() {
     // Load pets.
@@ -46,7 +46,7 @@ App  {
     }
     // If no injected web3 instance is detected, fall back to Ganache
     else {
-      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+      App.web3Provider = new Web3.providers.HttpProvider('https://rinkeby.infura.io/v3/467ba6fedd7b4669b0bafbbcf80ab595');
     }
     web3 = new Web3(App.web3Provider);
     return App.initContract();
@@ -63,8 +63,8 @@ App  {
     });
     return console.log('testing 123');
   
-  },
-};
+  }
+}
   //bindEvents: function() {
     //$(document).on('click', '.btn-adopt', App.handleAdopt);
   //},

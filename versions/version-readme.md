@@ -16,3 +16,6 @@ This contains the src files that we initially modified and later removed from th
 
 ## TRUFFLE
 This is a base Truffle initialization, but with modifications made to the /client/public/src/ files relevant to a web3 integration.
+
+## HARDHAT
+A version using a template created by JVJ using hardhat.
