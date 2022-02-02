@@ -39,6 +39,33 @@ Game play where users buy a ticket and take the ride! A random soul is selected 
 
 ## Installation & Requirements
 
+###Requirements
+
+
+- npm 
+- nodejs version 16
+- npx
+- git
+
+
+To install, first pull the repository using
+`git clone https://github.com/ZrowGz/the-loooootery.git`
+
+You will need to obtain:
+- API keys for access to Rinkeby (alchemy?)
+- The private key (not seedphrase) from your ethereum wallet
+- Access to Rinkeby Testnet
+- Some Rinkeby test ether
+
+Replace `sample.env` fields with your own data and save as `.env`
+
+Then, from the CLI at the root of this new directory run:
+- `npm install`
+- `npx hardhat compile`
+- `npx hardhat run --network rinkeby scripts/DevilTrainLotto/deploy.js;`
+- `npm run dev`
+
+Open a web browser and open `localhost:3000`
 
 ---
 
