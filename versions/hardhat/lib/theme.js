@@ -1,6 +1,6 @@
 import { createTheme } from '@material-ui/core/styles';
 
-// creates a thene that will be imported into pages/_app App higher order component
+// creates a theme that will be imported into pages/_app App higher order component
 
 const theme = createTheme({  
   spacing: 8,

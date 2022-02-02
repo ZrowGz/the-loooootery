@@ -27,7 +27,7 @@ export default function HeaderMenu() {
         onClick={handleClick}
         style={styleConnectButton}
       >
-          Navigation
+          Routes
       </Button>
       <Menu
         id="basic-menu"
@@ -40,10 +40,10 @@ export default function HeaderMenu() {
       >
         <MenuItem onClick={handleClose} style={styleMenuItem}>
             <Link href="/" as="/" style={styleLink}>
-                <Typography> Home </Typography>
+                <Typography> The Train Station </Typography>
             </Link>
         </MenuItem>
-        <MenuItem onClick={handleClose} style={styleMenuItem}>
+        {/* <MenuItem onClick={handleClose} style={styleMenuItem}>
             <Link href="/waveportal" as="/waveportal" style={styleLink}>
                 <Typography> Wave Portal </Typography>
             </Link>
@@ -57,7 +57,7 @@ export default function HeaderMenu() {
             <Link href="/nftgame" as="/nftgame" style={styleLink}>
                 <Typography> NFT Game </Typography>
             </Link>
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
     </div>
   );

@@ -1,66 +1,75 @@
-import React, { useState } from "react";
-import {styleTitleText, styleSubText, styleApp, styleLink, styleHeader, styleContainer} from '../components/SharedStyles';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
-import FriendsCards from "../components/Friends";
+import React, { useEffect, useState } from "react";
+import { DEVIL_TRAIN_LOTTO_ADDRESS } from "../lib/constants";
+import { connectToContract } from "../lib/connectToContract";
+//import WavePortal from "../public/contracts/WavePortal.json";
+//import { wave } from "../lib/wavePortal/wave";
+//import { getAllWaves } from "../lib/wavePortal/getAllWaves";
+import { checkIfWalletIsConnected } from "../lib/checkIfWalletIsConnected";
+//import { useForm } from "react-hook-form"; //needed
+import { Grid, Typography, Link, Button } from "@mui/material";
+import {styleApp, styleTitleText, styleConnectButton} from "../components/SharedStyles";
+import theme from "../lib/theme";
+import { CircularProgress } from "@mui/material";
+//import Footer from "../components/Footer";
+import DevilTrainLottery from "../public/contracts/DevilTrainLottery.json";
+import { buyTicket } from "../lib/devilsLotto/buyTicket";
+import smile from '../public/assets/smile.jpg';
+import Image from 'next/dist/client/image'; 
 
 
+export default function deviltrainlotto(connectProps) {
+  //const { register, handleSubmit } = useForm();
+  const { currentAccount } = connectProps;
 
+  const [connectedContract, setConnectedContract] = useState(null);
+  const [mining, setMining] = useState(false);
+  const [ticketPrice, setTicketPrice] = useState();
+  const [tripsTaken, setTripsTake] = useState(0);
+  const [ticketSales, setTicketSales] = useState(0);
+ 
+  const updateContract = async () => {
+    const connectedContract = await connectToContract(
+      DEVIL_TRAIN_LOTTO_ADDRESS,
+      DevilTrainLottery.abi
+    );
+    console.log(connectedContract);
+    setConnectedContract(connectedContract);
+  };
 
-// Constants
-const TWITTER_HANDLE = 'jonValjonathan';
-const RINKEBY_FACUET = 'https://buildspace-faucet.vercel.app/';
-const RINKEBY_FACUET2 = 'https://faucet.rinkeby.io/';
+  const callBuyTicket = async () => {
+    console.log('buyTicket');
+    if (connectedContract) {
+     await buyTicket(connectedContract, setMining, setTicketSales, currentAccount);
+    }
+  };
+ 
+  useEffect(() => {
+    updateContract();
+  }, []);
 
-const index = () => {
-  
+  useEffect(() => {
+  }, [connectedContract]);
+
   return (
     <div style={styleApp}>
-          <Grid container spacing={2} algin="center">
-            <Grid item xs={12}>
-              <h1 style={styleTitleText}>Buildspace.co Knowledge Session</h1>
-              <p style={styleSubText}>
-                Three follow-along, text-based projects.
-                <br/> 
-                <br/>
-                Write, compile, and deploy your first smart contracts.
-                <br/>
-                <br/>
-                Connect your app to the Ethereum blockchain.
-                <br/>
-                <br/>
-                Create a front-end to send transactions and view blockchain data. 
-              </p>
-            </Grid>
-            <Grid item xs={12}>
-                <h1 style={styleTitleText}> Step 1: Get Rinkeby Test ETH</h1>
-                <Link href={RINKEBY_FACUET} style={styleLink}> Faucet 1</Link>
-                <br />
-                <Link href={RINKEBY_FACUET2} style={styleLink}> Faucet 2</Link>
-              </Grid>
-              <Grid item xs={12}>
-                <h1 style={styleTitleText}> Project 1: Wave Portal</h1>
-                <p> Deploy your first smart contract on the Rinkeby test network.</p>
-                <p> Create a web3 front-end to interact with your contract.</p>
-                <p> Send transactions to the blockchain with message data.</p>
-                <p> Query your contract and retrieve data from the blockchain.</p>
-              </Grid>
-              <Grid item xs={12}>
-                <h1 style={styleTitleText}>Project 2: Mint an NFT</h1>
-                <p>Use OpenZeppelin to mint generative ERC721s.</p>
-                <p>Dive further into etherjs front-ends.</p>
-                <p>View your NFTs on Opensea and Rarible.</p>
-              </Grid>
-              <Grid item xs={12}>
-                <h1 style={styleTitleText}>Project 3: NFT Game</h1>
-                <p>Create your own mini turn-based NFT browser game.</p>
-                <p>Create transactions that alter the state of your NFTs.</p>
-                <p>View state changes on OpenSea.</p>
-              </Grid>
-              <FriendsCards />
-          </Grid>          
-      </div> 
-  );
-};
+        <title>Project 3</title>
+        <h1 class="header">Devil's Train</h1>
+        <h2 class="under">Will you get lucky? Or will you get rolled?</h2>
 
-export default index;
+        <p>Are you game?<br/>
+        It is simple really...<br/> take a risk, if you dare...<br/>
+        All you have to do is buy a ticket... <br/>the rest is <em>EASY PEASY</em></p>
+        <Image src={smile} alt={`${smile.title} logo`}/>
+        <p>Once you buy your ticket wait for the train to fill<br/>
+        When all the riders are on board a signal is sent and <em>away we go</em><br/>
+        Patience is a virtue and by the time the train is back at the station<br/>
+            you will know if the Devil's Luck was on your side...
+        </p>
+        <div class="container">
+            <div class="center">
+                <Button style={styleConnectButton} onClick={callBuyTicket}>Take a Chance</Button>
+            </div>
+          </div>
+    </div> 
+    )
+}

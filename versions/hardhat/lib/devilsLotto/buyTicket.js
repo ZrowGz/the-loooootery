@@ -4,8 +4,9 @@ export const buyTicket = async (connectedContract, setMining, setTicketSales, cu
     console.log('BuyTicket');
     console.log({connectedContract});
     try {
-        const overides = {value: ethers.utils.parseEther('.1')}
-        const buyTicketTxn = await connectedContract.buyTicket(overides);
+        const ticketPrice = await connectedContract.ticketPrice()
+        //const overides = {value: ethers.utils.parseEther('.1')}
+        const buyTicketTxn = await connectedContract.buyTicket({value: ticketPrice}); //removed overides
         console.log("Mining...", buyTicketTxn.hash);
 
         setMining(true);
