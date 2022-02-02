@@ -16,6 +16,7 @@
     "i": "^0.3.7",
     "next": "latest",
     "npm": "^8.1.0",
+    "npm-check-updates": "^12.2.1",
     "prop-types": "latest",
     "react": "latest",
     "react-dom": "latest",
