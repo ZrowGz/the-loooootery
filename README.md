@@ -1,6 +1,7 @@
 # the-loooootery
 
 ## About
+An on-chain lottery game where users buy the ticket for a flat fee. Winner is chosen randomly and all funds in the contract are paid out to the winner! Are you brave enough to take a ride on the dev
 
 ---
 
@@ -27,7 +28,7 @@ Game play where users buy a ticket and take the ride! A random soul is selected 
 - setFee & setKeyHash: updatable settings for Chainlink VRF
 - setTicketPrice, setMaxRiders, setHouse: adjusts parameters for the game
 
-#### Contract Functions
+#### Contract-Only Functions
 - getRandomNumber: when maxRiders are met, call this to trigger VRF call. Only called internally.
 - fulfillRandomness: only callable by Chainlink VRF Coordinator
   - Assigns winner
@@ -41,15 +42,11 @@ Game play where users buy a ticket and take the ride! A random soul is selected 
 
 ###Requirements
 
-
+***warning:*** *using `sudo` when installing node & it's components may result in permissions issues*
 - npm 
 - nodejs version 16
 - npx
 - git
-
-
-To install, first pull the repository using
-`git clone https://github.com/ZrowGz/the-loooootery.git`
 
 You will need to obtain:
 - API keys for access to Rinkeby (alchemy?)
@@ -57,15 +54,22 @@ You will need to obtain:
 - Access to Rinkeby Testnet
 - Some Rinkeby test ether
 
-Replace `sample.env` fields with your own data and save as `.env`
+Replace [`sample.env`](README.md) fields with your own data and save as `.env`
 
-Then, from the CLI at the root of this new directory run:
+To install the repo, download the repository using
+```shell
+git clone https://github.com/ZrowGz/the-loooootery.git
+```
+
+Then, from the CLI at the root of this new directory run each:
 - `npm install`
 - `npx hardhat compile`
 - `npx hardhat run --network rinkeby scripts/DevilTrainLotto/deploy.js;`
 - `npm run dev`
 
-Open a web browser and open `localhost:3000`
+Open a web browser and navigate to: `localhost:3000`
+
+- Can also verify deployement using: `npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS` <--Replace this with your deployed contract's address
 
 ---
 
