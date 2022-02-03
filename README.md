@@ -1,7 +1,10 @@
 # the-loooootery
 
 ## About
-An on-chain lottery game where users buy the ticket for a flat fee. Winner is chosen randomly and all funds in the contract are paid out to the winner! Are you brave enough to take a ride on the dev
+An on-chain lottery game where users buy the ticket for a flat fee. Winner is chosen randomly and all funds in the contract are paid out to the winner! Are you brave enough to take a ride on the dev  
+  
+Website: https://the-loooootery-k2qwpqio1-zrowgz.vercel.app/  
+Contract Address: [0x0E221b24AA33762D1Cc5B75Bb50d1B43cc72853a](https://rinkeby.etherscan.io/address/0x0E221b24AA33762D1Cc5B75Bb50d1B43cc72853a)
 
 ---
 
@@ -67,6 +70,34 @@ Then, from the CLI at the root of this new directory run each:
 - `npx hardhat run --network rinkeby scripts/DevilTrainLotto/deploy.js;`
 - `npm run dev`
 
+To deploy to a website, you will need to first run:
+- `npm run build`
+- Resolve any build errors
+- Then connect your github to a service like Vercel
+
+To verify your smart contract code on the blockchain scanner:
+- obtain an etherscan API Key
+- install the plugin using: `npm install @nomiclabs/hardhat-etherscan`
+- modify `hardhat.config.js`
+  - below the existing `require()` add: `require(”@nomiclabs/hardhat-etherscan”);`
+- modify `module.exports`:
+```shell
+module.exports = {
+  solidity: "0.8.7", 
+  networks: {
+    rinkeby: {
+      url: secrets.url,
+      accounts: [secrets.key]
+    }
+  },
+  etherscan: {
+    apiKey: "YOUR_ETHERSCAN_API_KEY_HERE"
+  }
+};
+```
+- create `secrets.json`
+- ***NEEDS TO BE COMPLETED - CONTRACT SOURCE CODE REMAINS UNVERIFIED***
+
 Open a web browser and navigate to: `localhost:3000`
 
 - Can also verify deployement using: `npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS` <--Replace this with your deployed contract's address
@@ -75,19 +106,22 @@ Open a web browser and navigate to: `localhost:3000`
 
 ## Addresses & Links
 
-<<<<<<< HEAD
 ### This Contract
-Rinkeby Contract Address: 0x68b50434118e7839c6ce0f8054a50F9aD9B9D134
-=======
+Rinkeby Contract Address: 0x0E221b24AA33762D1Cc5B75Bb50d1B43cc72853a
 ### On Rinkeby Testnet
-Contract Address: 0x1734b93e6916B363D3A74CeCC06086A3F8F6C800  
+Website: https://the-loooootery-k2qwpqio1-zrowgz.vercel.app/  
+Contract Address: [0x0E221b24AA33762D1Cc5B75Bb50d1B43cc72853a](https://rinkeby.etherscan.io/address/0x0E221b24AA33762D1Cc5B75Bb50d1B43cc72853a)  
 House Multisig (gnosis safe): 0x1DfF53Bbb4D478161dF0b0D51B8Bc942108bE055
->>>>>>> cbcacd86e82527653294bdae73cbce5a0723d95e
+
 
 ### Chainlink Data
-VRF Addresses: https://docs.chain.link/docs/vrf-contracts/
+VRF Addresses: https://docs.chain.link/docs/vrf-contracts/  
 LINK & ETH Faucet: https://faucets.chain.link/rinkeby
 
 ---
 
 ## Contributors
+* Eamon Conheady - github: ZrowGz
+* Meghan Kennedy - github: megkennedy
+* Will Dittig - github: WillDittig
+* Athit Padmasuta - github: AthitXX
